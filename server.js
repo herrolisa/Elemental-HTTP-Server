@@ -43,7 +43,7 @@ var server = http.createServer(function (request, response) {
       }
 
       //write html boilerplate to string
-      var fullHTML = '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>The Elements - ' + postObject.elementName + '</title><link rel="stylesheet" href="../public/css/styles.css"></head><body>' + bodyHTML + '</body></html>';
+      var fullHTML = '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>The Elements - ' + postObject.elementName + '</title><link rel="stylesheet" href="css/styles.css"></head><body>' + bodyHTML + '</body></html>';
 
       //create new HTML file with POST data
       fs.writeFile('./public/' + postObject.elementName.toLowerCase() + '.html', fullHTML, function (err) {
