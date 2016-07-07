@@ -10,6 +10,19 @@ var server = http.createServer(function (request, response) {
     uriRequest = '/index.html';
   }
 
+  // fs.readFile('./public' + uriRequest, 'utf8', function (err, responseBody) {
+  //   if (err) {
+  //     uriRequest = '/404.html';
+  //     fs.readFile('./public' + uriRequest, 'utf8', function (err, responseBody) {
+  //       response.writeHead(404, {"Content-Type": "text/html"});
+  //       response.end(responseBody.toString());
+  //     });
+  //   }else if (method === 'GET'){
+  //     response.writeHead(200, {"Content-Type": "text/html"});
+  //     response.end(responseBody.toString());
+  //   }
+  // });
+
   //concatenate incoming POST data into a string
   var completePost = '';
   request.on('data', function (data) {
@@ -30,7 +43,7 @@ var server = http.createServer(function (request, response) {
       }
 
       //write html boilerplate to string
-      var fullHTML = '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>The Elements - ' + postObject.elementName + '</title><link rel="stylesheet" href="./public/css/styles.css"></head><body>' + bodyHTML + '</body></html>';
+      var fullHTML = '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>The Elements - ' + postObject.elementName + '</title><link rel="stylesheet" href="../public/css/styles.css"></head><body>' + bodyHTML + '</body></html>';
 
       //create new HTML file with POST data
       fs.writeFile('./public/' + postObject.elementName.toLowerCase() + '.html', fullHTML, function (err) {
@@ -40,18 +53,6 @@ var server = http.createServer(function (request, response) {
     }
   });
 
-  // fs.readFile('./public' + uriRequest, 'utf8', function (err, responseBody) {
-  //   if (err) {
-  //     uriRequest = '/404.html';
-  //     fs.readFile('./public' + uriRequest, 'utf8', function (err, responseBody) {
-  //       response.writeHead(404, {"Content-Type": "text/html"});
-  //       response.end(responseBody.toString());
-  //     });
-  //   }else if (method === 'GET'){
-  //     response.writeHead(200, {"Content-Type": "text/html"});
-  //     response.end(responseBody.toString());
-  //   }
-  // });
 });
 
 server.listen(8080);
