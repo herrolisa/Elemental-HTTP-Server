@@ -54,7 +54,7 @@ var server = http.createServer(function (request, response) {
       fs.access('./public/' + postObject.elementName.toLowerCase() + '.html', fs.F_OK, function(err) {
           if (err) { //the file does not exist -- create new file
             //create new HTML file with POST data
-            console.log('page does not exists. lets make a page');
+            console.log('The page does not exist yet. Let\'s make a page!');
             fs.writeFile('./public/' + postObject.elementName.toLowerCase() + '.html', createHTML(postObject), function (err) {
               if (err) {
                 throw err;
@@ -62,12 +62,22 @@ var server = http.createServer(function (request, response) {
               console.log('It\'s saved!');
               response.writeHead(200, {"Content-Type": "application/json"});
               response.end('{ "success" : true }');
-              //update index.html file
-              fs.writeFile('./public/index.html', rewriteIndex(postObject.elementName), function(err){
-                  if(err){
-                    console.log(err);
-                  }
-              }); //end of fs.writeFile for index.html
+              //read index.html
+              fs.readFile('./public/index.html', 'utf8', function (err, htmlData) {
+                var currentIndex = htmlData.toString();
+                var splitLocation = currentIndex.indexOf('</ol>');
+                var firstSplit = currentIndex.slice(0, splitLocation);
+                var secondSplit = currentIndex.slice(splitLocation);
+                var insertLink = '\t<li>\n' +
+                '\t\t\t<a href="/' + postObject.elementName.toLowerCase() + '.html">'+ postObject.elementName + '</a>\n' + '\t\t</li>\n\t';
+                //insert new markup for html file
+                fs.writeFile('./public/index.html', firstSplit + insertLink + secondSplit, function(err){
+                    if(err){
+                      console.log(err);
+                    }
+                }); //end of fs.writeFile for index.html
+              }); //end of fs.readFile for index.html
+
             }); //end of fs.writeFile for new element html
           }else{ //the file does exist
             console.log('The page already exists.');
@@ -81,33 +91,6 @@ var server = http.createServer(function (request, response) {
 }); //end of server
 
 server.listen(8080);
-
-function rewriteIndex(element) {
-  return '<!DOCTYPE html>\n' +
-  '<html lang="en">\n' +
-  '\t<head>\n' +
-  '\t\t<meta charset="UTF-8">\n' +
-  '\t\t<title>The Elements</title>\n' +
-  '\t<link rel="stylesheet" href="/css/styles.css">\n' +
-  '\t</head>\n' +
-  '\t<body>\n' +
-    '\t\t<h1>The Elements</h1>\n' +
-    '\t\t<h2>These are all the known elements.</h2>\n' +
-    '\t\t<h3>These are 2</h3>\n' +
-    '\t\t<ol>\n' +
-      '\t\t\t<li>\n' +
-        '\t\t\t\t<a href="/hydrogen.html">Hydrogen</a>\n' +
-      '\t\t\t</li>\n' +
-      '\t\t\t<li>\n' +
-        '\t\t\t\t<a href="/helium.html">Helium</a>\n' +
-      '\t\t\t</li>\n' +
-      '\t\t\t<li>\n' +
-        '\t\t\t\t<a href="/' + element.toLowerCase() +'.html">' + element + '</a>\n' +
-      '\t\t\t</li>\n' +
-    '\t\t</ol>\n' +
-  '\t</body>\n' +
-  '</html>';
-}
 
 //creates markup for new HTML file
 function createHTML(hashTable){
