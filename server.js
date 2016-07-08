@@ -4,16 +4,12 @@ var fs = require('fs');
 var path = require('path');
 
 var server = http.createServer(function (request, response) {
-  var method = request.method;
-
-  var uriRequest = request.url;
+  var method = request.method; //check method request
+  var uriRequest = request.url; //check page requested
   if (uriRequest == '/'){
     uriRequest = '/index.html';
   }
-
-  //check file extension
-  var fileType = path.extname(uriRequest);
-  console.log(fileType);
+  var fileType = path.extname(uriRequest); //check file extension
 
   if (method === 'GET'){
     fs.readFile('./public' + uriRequest, 'utf8', function (err, responseBody) {
@@ -36,7 +32,7 @@ var server = http.createServer(function (request, response) {
         }
       }
     });
-  }
+  } //end of GET method response
 
   if (method ==='POST'){
     //concatenate incoming POST data into a string
@@ -52,40 +48,77 @@ var server = http.createServer(function (request, response) {
 
       //check if file exists
       fs.access('./public/' + postObject.elementName.toLowerCase() + '.html', fs.F_OK, function(err) {
-          if (err) { //the file does not exist -- create new file
-            //create new HTML file with POST data
-            console.log('The page does not exist yet. Let\'s make a page!');
-            fs.writeFile('./public/' + postObject.elementName.toLowerCase() + '.html', createHTML(postObject), function (err) {
-              if (err) {
-                throw err;
-              }
-              console.log('It\'s saved!');
-              response.writeHead(200, {"Content-Type": "application/json"});
-              response.end('{ "success" : true }');
-              //read index.html
-              fs.readFile('./public/index.html', 'utf8', function (err, htmlData) {
-                var currentIndex = htmlData.toString();
-                var splitLocation = currentIndex.indexOf('</ol>');
-                var firstSplit = currentIndex.slice(0, splitLocation);
-                var secondSplit = currentIndex.slice(splitLocation);
-                var insertLink = '\t<li>\n' +
-                '\t\t\t<a href="/' + postObject.elementName.toLowerCase() + '.html">'+ postObject.elementName + '</a>\n' + '\t\t</li>\n\t';
-                //insert new markup for html file
-                fs.writeFile('./public/index.html', firstSplit + insertLink + secondSplit, function(err){
-                    if(err){
-                      console.log(err);
-                    }
-                }); //end of fs.writeFile for index.html
-              }); //end of fs.readFile for index.html
-
-            }); //end of fs.writeFile for new element html
-          }else{ //the file does exist
-            console.log('The page already exists.');
-            response.writeHead(400, {"Content-Type": "application/json"});
+        if (err) { //the file does not exist -- create new file
+          //create new HTML file with POST data
+          console.log('The page does not exist yet. Let\'s make a page!');
+          fs.writeFile('./public/' + postObject.elementName.toLowerCase() + '.html', createHTML(postObject), function (err) {
+            if (err) {
+              throw err;
+            }
+            console.log('It\'s saved!');
+            response.writeHead(200, {"Content-Type": "application/json"});
             console.log(response._header);
-            response.end('{ "success" : false }');
-          }
-      });
+            response.end('{ "success" : true }');
+            //read index.html
+            fs.readFile('./public/index.html', 'utf8', function (err, htmlData) {
+              var currentIndex = htmlData.toString();
+              var splitLocation = currentIndex.indexOf('</ol>');
+              var firstSplit = currentIndex.slice(0, splitLocation);
+              var secondSplit = currentIndex.slice(splitLocation);
+              var insertLink = '\t<li>\n' +
+              '\t\t\t<a href="/' + postObject.elementName.toLowerCase() + '.html">'+ postObject.elementName + '</a>\n' + '\t\t</li>\n\t';
+              //insert new markup for html file
+              fs.writeFile('./public/index.html', firstSplit + insertLink + secondSplit, function(err){
+                  if(err){
+                    console.log(err);
+                  }
+              }); //end of fs.writeFile for index.html
+            }); //end of fs.readFile for index.html
+
+          }); //end of fs.writeFile for new element html
+        }else{ //the file does exist
+          console.log('The page already exists.');
+          response.writeHead(400, {"Content-Type": "application/json"});
+          console.log(response._header);
+          response.end('{ "success" : false }');
+        }
+      }); //end of fs.access (checking if the element file exists)
+    }); //end of request.on
+  } //end of POST method response
+
+  if (method === 'PUT'){
+    //concatenate incoming POST data into a string
+    var completePost = '';
+    request.on('data', function (data) {
+      completePost += data;
+    });
+
+    //do this when data finishes coming in
+    request.on('end', function () {
+      //convert concatenated string into object
+      var postObject = querystring.parse(completePost);
+
+      //check if file exists
+      fs.access('./public/' + postObject.elementName.toLowerCase() + '.html', fs.F_OK, function(err) {
+        if (err) { //the file doesn't exist -- send error
+          //create new HTML file with POST data
+          console.log('The page does not exists.');
+          response.writeHead(500, {"Content-Type": "application/json"});
+          console.log(response._header);
+          response.end('{ "error" : "resource ' + postObject.elementName.toLowerCase() + '.html does not exist" }');
+        }else{ //the file does exist
+          console.log('The page exist! Let\'s edit it!');
+          fs.writeFile('./public/' + postObject.elementName.toLowerCase() + '.html', createHTML(postObject), function (err) {
+            if (err) {
+              throw err;
+            }
+            console.log('It\'s saved!');
+            response.writeHead(200, {"Content-Type": "application/json"});
+            console.log(response._header);
+            response.end('{ "success" : true }');
+          }); //end of fs.writeFile for new element html
+        }
+      }); //end of fs.access (checking if the element file exists)
     }); //end of request.on
   }
 }); //end of server
