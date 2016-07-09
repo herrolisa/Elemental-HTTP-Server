@@ -11,6 +11,8 @@ var server = http.createServer(function (request, response) {
   }
   var fileType = path.extname(uriRequest); //check file extension
 
+  var completePost; //create variable for incoming data (for POST or PUT)
+
   if (method === 'GET'){
     fs.readFile('./public' + uriRequest, 'utf8', function (err, responseBody) {
       if (err) {
@@ -36,7 +38,7 @@ var server = http.createServer(function (request, response) {
 
   if (method ==='POST'){
     //concatenate incoming POST data into a string
-    var completePost = '';
+    completePost = '';
     request.on('data', function (data) {
       completePost += data;
     });
@@ -65,8 +67,7 @@ var server = http.createServer(function (request, response) {
               var splitLocation = currentIndex.indexOf('</ol>');
               var firstSplit = currentIndex.slice(0, splitLocation);
               var secondSplit = currentIndex.slice(splitLocation);
-              var insertLink = '\t<li>\n' +
-              '\t\t\t<a href="/' + postObject.elementName.toLowerCase() + '.html">'+ postObject.elementName + '</a>\n' + '\t\t</li>\n\t';
+              var insertLink = '<li><a href="/' + postObject.elementName.toLowerCase() + '.html">'+ postObject.elementName + '</a></li>';
               //insert new markup for html file
               fs.writeFile('./public/index.html', firstSplit + insertLink + secondSplit, function(err){
                   if(err){
@@ -88,7 +89,7 @@ var server = http.createServer(function (request, response) {
 
   if (method === 'PUT'){
     //concatenate incoming POST data into a string
-    var completePost = '';
+    completePost = '';
     request.on('data', function (data) {
       completePost += data;
     });
@@ -101,13 +102,13 @@ var server = http.createServer(function (request, response) {
       //check if file exists
       fs.access('./public/' + postObject.elementName.toLowerCase() + '.html', fs.F_OK, function(err) {
         if (err) { //the file doesn't exist -- send error
-          //create new HTML file with POST data
           console.log('The page does not exists.');
           response.writeHead(500, {"Content-Type": "application/json"});
           console.log(response._header);
           response.end('{ "error" : "resource ' + postObject.elementName.toLowerCase() + '.html does not exist" }');
         }else{ //the file does exist
           console.log('The page exist! Let\'s edit it!');
+          //edit file with PUT data
           fs.writeFile('./public/' + postObject.elementName.toLowerCase() + '.html', createHTML(postObject), function (err) {
             if (err) {
               throw err;
@@ -121,7 +122,50 @@ var server = http.createServer(function (request, response) {
       }); //end of fs.access (checking if the element file exists)
     }); //end of request.on
   }
+
+  if (method === 'DELETE'){
+    //check if file exists
+    fs.access('./public/' + uriRequest, fs.F_OK, function(err) {
+      if (err) { //the file doesn't exist -- send error
+        console.log('The page does not exists, so it cannot be deleted.');
+        response.writeHead(500, {"Content-Type": "application/json"});
+        console.log(response._header);
+        response.end('{ "error" : "resource ' + uriRequest + ' does not exist" }');
+      }else{ //the file does exist
+        console.log('The page exist! Let\'s delete it!');
+        fs.unlink('./public/' + uriRequest, function (err) {
+          if (err) throw err;
+          console.log('Successfully deleted ' + uriRequest);
+          response.writeHead(200, {"Content-Type": "application/json"});
+          console.log(response._header);
+          response.end('{ "success" : true }');
+        });
+
+
+        //read index.html
+        fs.readFile('./public/index.html', 'utf8', function (err, htmlData) {
+          var currentIndex = htmlData.toString();
+          var anchorText = uriRequest.replace(".html", "");
+          anchorText = anchorText.toUpperCase() + anchorText.slice(2);
+          var removeLink = '<li><a href="' + uriRequest + '">' + anchorText +'</a></li>';
+          var newIndex = currentIndex.replace(removeLink, '');
+
+          //insert new markup for html file
+          fs.writeFile('./public/index.html', newIndex, function(err){
+              if(err){
+                console.log(err);
+              }
+              return;
+          }); //end of fs.writeFile for index.html
+        }); //end of fs.readFile for index.html
+
+      }
+    }); //end of fs.access (checking if the element file exists)
+  }
+
 }); //end of server
+
+
 
 server.listen(8080);
 
